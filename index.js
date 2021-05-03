@@ -10,13 +10,13 @@ let timeDiff = 0;
 let timestamp = Date.now()/1000
 
 async function startProgram(){
-    console.log("Checking slots for 18+ for the district ID="+config.districtId+" and date="+config.date);
+    console.log("Checking slots for "+config.minAgeRequirement+"+ for the district ID="+config.districtId+" and date="+config.date);
     console.log("\n\nCurrent config:");
     console.log(config);
-    console.log("\n\nPlease edit config.json to change date and place\n\n");
+    console.log("\n\nPlease edit config.json as per your need\n\n");
     while(true){
         timeDiff = (Date.now()/1000) - timestamp;
-        if(timeDiff % 5 == 0 && !fetchInProgress){
+        if(timeDiff % config.delayInSeconds == 0 && !fetchInProgress){
             fetchInProgress = true;
             timestamp += timeDiff;
             try{
@@ -71,7 +71,7 @@ async function fetchCenters(){
                             json.centers.filter((center) => {
                                 if(center.sessions.length > 0){
                                     center.sessions.filter((session) => {
-                                        if((session['min_age_limit'] == 18) && (session['available_capacity'] >= config.minSlotsRequired)){
+                                        if((session['min_age_limit'] == config.minAgeRequirement) && (session['available_capacity'] >= config.minSlotsRequired)){
                                             result.push({
                                                 name: center.name,
                                                 capacity: session['available_capacity'],
