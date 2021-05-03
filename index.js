@@ -6,13 +6,19 @@ const config = require('./config');
 let resMaster = [];
 let counter = 1;
 let fetchInProgress = false;
+let timeDiff = 0;
+let timestamp = Date.now()/1000
 
 async function startProgram(){
+    console.log("Checking slots for 18+ for the district ID="+config.districtId+" and date="+config.date);
+    console.log("\n\nCurrent config:");
     console.log(config);
+    console.log("\n\nPlease edit config.json to change date and place\n\n");
     while(true){
-        counter++;
-        if(counter % 100000 == 0 && !fetchInProgress){
+        timeDiff = (Date.now()/1000) - timestamp;
+        if(timeDiff % 5 == 0 && !fetchInProgress){
             fetchInProgress = true;
+            timestamp += timeDiff;
             try{
                 let centers = await fetchCenters();
             
@@ -23,7 +29,8 @@ async function startProgram(){
                     console.log('Detected change');
                     console.log(diff);
                     notifier.notify(JSON.stringify(diff));
-
+                }else{
+                    console.log("No change")
                 }
                 resMaster = centers;
             }catch(error){
@@ -40,7 +47,7 @@ async function startProgram(){
 
 async function fetchCenters(){
     return new Promise((resolve, reject) => {
-        return fetch("https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=294&date=03-05-2021", {
+        return fetch("https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id="+config.districtId+"&date="+config.date, {
             "headers": {
               "accept": "application/json, text/plain, */*",
               "accept-language": "en-US,en;q=0.9,hi;q=0.8",
@@ -64,7 +71,7 @@ async function fetchCenters(){
                             json.centers.filter((center) => {
                                 if(center.sessions.length > 0){
                                     center.sessions.filter((session) => {
-                                        if(session['min_age_limit'] == 18 && session['available_capacity'] > 0){
+                                        if((session['min_age_limit'] == 18) && (session['available_capacity'] >= config.minSlotsRequired)){
                                             result.push({
                                                 name: center.name,
                                                 capacity: session['available_capacity'],
@@ -76,7 +83,6 @@ async function fetchCenters(){
                                 }
                             })
                             fetchInProgress = false;
-                            console.log("PASS");
                             resolve(result)
                         }catch(error){
                             fetchInProgress = false;
